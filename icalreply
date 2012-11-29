@@ -1,5 +1,6 @@
 #!/usr/bin/python
 #FIXME: update PRODID, delete description, organizer email
+#FIXME: multiple emails
 import vobject
 from argparse import ArgumentParser
 from os.path import isfile
