@@ -33,12 +33,16 @@ else:
     raise SystemExit("must specify valid invitation file or stdin")
 
 outfile = None
-if (not args.output and not args.sendmail) or args.output == "-":
+
+if args.output:
+    if args.output == "-":
+        outfile = stdout
+    elif isfile(args.output):
+        outfile = open(args.output, 'w')
+    else:
+        raise SystemExit("must specify valid output file or stdout")
+elif not args.sendmail:
     outfile = stdout
-elif args.output and isfile(args.output):
-    outfile = open(args.output, 'w')
-#else:
-#    raise SystemExit("must specify valid output file or stdout")
 
 response = args.response
 

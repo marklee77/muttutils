@@ -1,0 +1,39 @@
+#!/usr/bin/python
+#FIXME: update PRODID, delete description, organizer email
+#FIXME: multiple emails
+import vobject
+from argparse import ArgumentParser
+from os.path import isfile
+from sys import stdin, stdout
+
+parser = ArgumentParser(description="Generate a replay to an iCal Invitation.")
+parser.add_argument('-i', '--invite', default='-', 
+                    help='invitation .ics file or - (for stdin)')
+parser.add_argument('-o', '--output',
+                    help='output file or - (for stdout)')
+
+args = parser.parse_args()
+
+infile = None
+if args.invite == "-":
+    infile = stdin
+elif isfile(args.invite):
+    infile = open(args.invite, 'r')
+else:
+    raise SystemExit("must specify valid invitation file or stdin")
+
+outfile = None
+if args.output == "-":
+    outfile = stdout
+elif isfile(args.output):
+    outfile = open(args.output, 'w')
+else:
+    raise SystemExit("must specify valid output file or stdout")
+
+ical = vobject.readOne(infile.read())
+
+attendee_list = ical.vevent.attendee_list
+
+if outfile:
+    outfile.close()
+
