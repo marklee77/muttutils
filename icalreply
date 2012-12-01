@@ -10,10 +10,9 @@ parser = ArgumentParser(description="Generate a replay to an iCal Invitation.")
 parser.add_argument('-e', '--email', action='append', default=[], help='attendee email') 
 parser.add_argument('-i', '--invite', default='-', 
                     help='invitation .ics file or - (for stdin)')
-parser.add_argument('-o', '--output', default='-',
+parser.add_argument('-o', '--output',
                     help='output file or - (for stdout)')
-parser.add_argument('-f', '--format', choices=['ics', 'email'], default='ics', 
-                    help='output format')
+parser.add_argument('-s', '--sendmail', help='optional path to sendmail for replies')
 parser.add_argument('-r', '--response', 
                     choices=['accepted', 'declined', 'tentative'],
                     default='accepted', help='invitation response')
@@ -23,7 +22,7 @@ args = parser.parse_args()
 if not len(args.email):
     raise SystemExit("error: can't send response without attendee email!")
 
-emails = args.email
+addrs = args.email
 
 infile = None
 if args.invite == "-":
@@ -34,12 +33,14 @@ else:
     raise SystemExit("must specify valid invitation file or stdin")
 
 outfile = None
-if args.output == "-":
+if (not args.output and not args.sendmail) or args.output == "-":
     outfile = stdout
 elif isfile(args.output):
     outfile = open(args.output, 'w')
 else:
     raise SystemExit("must specify valid output file or stdout")
+
+response = args.response.upper()
 
 invite = vobject.readOne(infile.read())
 
@@ -51,33 +52,33 @@ invite.prodid.value = u'icalreply'
 del invite.vevent.description
 attendee_list = invite.vevent.attendee_list
 
-# FIXME: use addr instead of email?
 i = 0
 found_addrs = set()
 while i < len(attendee_list):
-    attendee_email = attendee_list[i].value.lower()
-    if attendee_email.startswith('mailto:'):
-        attendee_email = attendee_email[7:]
-    if attendee_email in emails:
-        found_addrs.add(attendee_email)
-        attendee_list[i].params[u'PARTSTAT'][0] = u'ACCEPTED'
+    attendee_addr = attendee_list[i].value.lower()
+    if attendee_addr.startswith('mailto:'):
+        attendee_addr = attendee_addr[7:]
+    if attendee_addr in addrs:
+        found_addrs.add(attendee_addr)
+        attendee_list[i].params[u'PARTSTAT'][0] = response
         del attendee_list[i].params[u'RSVP']
         i += 1
     else:
         del attendee_list[i]
 
 if i == 0:
-    raise SystemExit("attendee email not found")
+    raise SystemExit("attendee email address not found")
 
-if args.format == 'ics':
+if outfile:
     outfile.write(invite.serialize())
-elif args.format == 'email':
+    outfile.close()
+
+if args.sendmail:
     from email.mime.text import MIMEText
     msg = MIMEText(invite.serialize(), 'calendar')
     msg['Subject'] = 'FIXME'
     msg['To'] = invite.vevent.organizer.value[7:]
     for addr in found_addrs:
         msg['From'] = addr
-        outfile.write(msg.as_string())
+        #outfile.write(msg.as_string())
 
-outfile.close()
