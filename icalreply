@@ -35,12 +35,12 @@ else:
 outfile = None
 if (not args.output and not args.sendmail) or args.output == "-":
     outfile = stdout
-elif isfile(args.output):
+elif args.output and isfile(args.output):
     outfile = open(args.output, 'w')
-else:
-    raise SystemExit("must specify valid output file or stdout")
+#else:
+#    raise SystemExit("must specify valid output file or stdout")
 
-response = args.response.upper()
+response = args.response
 
 invite = vobject.readOne(infile.read())
 
@@ -60,7 +60,7 @@ while i < len(attendee_list):
         attendee_addr = attendee_addr[7:]
     if attendee_addr in addrs:
         found_addrs.add(attendee_addr)
-        attendee_list[i].params[u'PARTSTAT'][0] = response
+        attendee_list[i].params[u'PARTSTAT'][0] = response.upper()
         del attendee_list[i].params[u'RSVP']
         i += 1
     else:
@@ -75,10 +75,14 @@ if outfile:
 
 if args.sendmail:
     from email.mime.text import MIMEText
+    from re import sub
+    from subprocess import Popen, PIPE
     msg = MIMEText(invite.serialize(), 'calendar')
-    msg['Subject'] = 'FIXME'
+    msg['Subject'] = 'Event Invitation Reply (' + response.title() + '): ' + invite.vevent.summary.value
     msg['To'] = invite.vevent.organizer.value[7:]
     for addr in found_addrs:
         msg['From'] = addr
-        #outfile.write(msg.as_string())
+        smcmd = sub('%f', addr, args.sendmail).split(" ")
+        smproc = Popen(smcmd, stdin=PIPE, stdout=stdout)
+        smproc.communicate(msg.as_string())
 
