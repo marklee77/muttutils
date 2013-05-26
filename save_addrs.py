@@ -67,7 +67,6 @@ def main(argv=None):
 
     msgparser = Parser()
     msg = msgparser.parse(stdin, True)
-    froms = msg.get_all('from', []) 
     tos = msg.get_all('to', []) 
     ccs = msg.get_all('cc', []) 
     bccs = msg.get_all('bcc', [])
@@ -76,10 +75,9 @@ def main(argv=None):
         con = connect(database_file)
         cur = con.cursor()
 
-        for prename, email in getaddresses(froms + tos + ccs + bccs):
+        for prename, email in getaddresses(tos + ccs + bccs):
 
             name = format_name(prename)
-            print name
             cur.execute("select name from addresses where email = '" + email + "';")
             row = cur.fetchone();
 
