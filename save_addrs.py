@@ -78,7 +78,7 @@ def main(argv=None):
         for prename, email in getaddresses(tos + ccs + bccs):
 
             name = format_name(prename)
-            cur.execute("select name from addresses where email = '" + email + "';")
+            cur.execute("select name from addresses where email like '" + email + "';")
             row = cur.fetchone();
 
             if not row:
@@ -87,7 +87,7 @@ def main(argv=None):
                 else:
                     cur.execute("insert into addresses (email, created, modified) values ('" + email + "', datetime('now'), datetime('now'));")
             elif name and len(name) > 0:
-                cur.execute("update addresses set name = '" + name + "', modified = datetime('now') where email = '" + email +"';")
+                cur.execute("update addresses set name = '" + name + "', modified = datetime('now') where email like '" + email +"';")
 
         con.commit()
     except sqlite3.Error, e:
